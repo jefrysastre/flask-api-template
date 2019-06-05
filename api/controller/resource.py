@@ -2,7 +2,6 @@ from flask import abort, request, g
 from flask_restful import Resource
 from playhouse.shortcuts import model_to_dict
 import datetime
-import logging
 
 from api.IOC import IOC
 config = IOC.get("config")

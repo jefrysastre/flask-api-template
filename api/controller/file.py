@@ -56,8 +56,6 @@ def download(filename):
 )
 def upload():
 
-    logging.debug("File-Uploaded with id: {0}".format(hash))
-
     if 'access_level' in config:
         __access_level = config.file_server.access_level["GET"]
 
@@ -75,6 +73,8 @@ def upload():
         filename = secure_filename(file.filename)
         file_extension = filename.split('.')[-1]
         hash = secrets.token_urlsafe(16)
+
+        logging.debug("File-Uploaded with id: {0}".format(hash))
 
         if folder_path[-1] == '/':
             file_path = "{0}{1}.{2}".format(folder_path, hash, file_extension)
