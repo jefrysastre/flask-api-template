@@ -3,8 +3,6 @@ import flask_restful
 import json
 from flask_cors import CORS
 
-from .controller.resource import ServiceBuilder
-from .controller.query import QueryBuilder
 from .IOC import IOC
 
 import api.postman as postman
@@ -112,7 +110,7 @@ class API(object):
             self.app.debug = False
 
     def enable_login(self):
-        from controller.login import login, logout
+        from .controller.login import login, logout
 
         self.app.route(self.base_url + 'login', methods=["GET"])(login)
         self.app.route(self.base_url + 'logout', methods=["GET"])(logout)
@@ -138,7 +136,7 @@ class API(object):
         )
 
     def enable_file_server(self):
-        from controller.file import download, upload
+        from .controller.file import download, upload
 
         self.app.route(self.base_url + 'download/<string:filename>', methods=["GET"])(download)
         self.app.route(self.base_url + 'upload', methods=["POST"])(upload)
@@ -174,6 +172,7 @@ class API(object):
         )
 
     def add_service(self, resource_model, **kwargs):
+        from .controller.resource import ServiceBuilder
 
         if "url" in kwargs:
             url_partial = kwargs["url"]
@@ -274,6 +273,7 @@ class API(object):
         self.postman_collection.add_item(item=_folder)
 
     def add_query(self, query, url, method, auth=None, desc=""):
+        from .controller.query import QueryBuilder
 
         # Encapsulate the query into a method
         _func = QueryBuilder.build(query)
@@ -303,6 +303,8 @@ class API(object):
         self.app.route(rule=self.base_url + url, methods=[method], endpoint=url)(_func)
 
     def add_method(self, callback, url, method, auth=None, desc=""):
+        from .controller.query import QueryBuilder
+
         _func = callback
         if auth is not None:
             _func = auth.login_required(
@@ -337,9 +339,3 @@ class API(object):
                 indent=4,
                 sort_keys=True
             )
-
-
-
-
-
-
