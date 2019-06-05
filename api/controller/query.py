@@ -1,8 +1,9 @@
 from flask import jsonify, request, g, abort
 from functools import wraps
 import logging
-import config
 
+from api.IOC import IOC
+config = IOC.get("config")
 
 class QueryBuilder:
 

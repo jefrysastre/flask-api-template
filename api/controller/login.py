@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import logging
 import jwt
 
-from IOC import IOC
+from api.IOC import IOC
 config = IOC.get("config")
 
 

@@ -5,7 +5,8 @@ import logging
 
 from werkzeug import secure_filename
 
-import config
+from api.IOC import IOC
+config = IOC.get("config")
 
 # ALLOWED_EXTENSIONS = set(['png', 'jpg'])
 

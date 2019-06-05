@@ -9,7 +9,7 @@ from .base import BaseAuth
 
 
 class TokenAuth(BaseAuth):
-    def __init__(self, resource, secret_key , date_time_format, action="",
+    def __init__(self, resource, secret_key, date_time_format, action="",
                 token_field='token',token_expiration_time=120):
 
         self.auth = HTTPTokenAuth('Bearer')

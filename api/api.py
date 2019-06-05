@@ -3,11 +3,11 @@ import flask_restful
 import json
 from flask_cors import CORS
 
-from controller.resource import ServiceBuilder
-from controller.query import QueryBuilder
-from IOC import IOC
+from .controller.resource import ServiceBuilder
+from .controller.query import QueryBuilder
+from .IOC import IOC
 
-import postman
+import api.postman as postman
 
 
 class API(object):

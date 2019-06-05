@@ -1,6 +1,5 @@
 from flask_httpauth import HTTPBasicAuth
-from flask import make_response, jsonify, g, abort
-import logging
+from flask import make_response, jsonify, g
 
 from .base import BaseAuth
 

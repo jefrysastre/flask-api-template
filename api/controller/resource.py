@@ -4,7 +4,8 @@ from playhouse.shortcuts import model_to_dict
 import datetime
 import logging
 
-import config
+from api.IOC import IOC
+config = IOC.get("config")
 
 
 class ServiceBuilder:
