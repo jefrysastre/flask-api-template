@@ -1,0 +1,14 @@
+[Unit]
+Description=Gunicorn instance to serve API
+After=network.target
+
+[Service]
+User=root
+Group=www-data
+WorkingDirectory=<remote-project-folder>
+Environment="PATH=<remote-project-folder>/venv/bin"
+ExecStart=<remote-project-folder>/venv/bin/gunicorn -w 3 -b 0.0.0.0:<production-flask-port> --timeout 120 --log-level debug main:app
+TimeoutStartSec=120s
+
+[Install]
+WantedBy=multi-user.target
