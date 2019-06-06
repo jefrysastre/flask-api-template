@@ -4,6 +4,7 @@ from playhouse.shortcuts import model_to_dict
 import datetime
 
 from api.IOC import IOC
+
 config = IOC.get("config")
 
 
@@ -17,7 +18,7 @@ class ServiceBuilder:
         _fields_service = {
             "__init__": ServiceBuilder._init,
             "_resource": resource,
-            "decorators":[],
+            "decorators": [],
         }
 
         if "url" in kwargs:
@@ -39,8 +40,8 @@ class ServiceBuilder:
             _fields_service["_view_model"] = kwargs.get('view_model')
 
         return (
-            type(resource._meta.name,(Service,),_fields_service),
-            type(resource._meta.name+"List", (ServiceList,), _fields_service)
+            type(resource._meta.name, (Service,), _fields_service),
+            type(resource._meta.name + "List", (ServiceList,), _fields_service)
         )
 
 
@@ -60,7 +61,7 @@ class BaseResource(Resource):
 
         for key, value in item.items():
             if type(value) in self.type_parser:
-                item[key] = self.type_parser[type(value)](value, level+1)
+                item[key] = self.type_parser[type(value)](value, level + 1)
         return item
 
     def make_response(self, item, code=200):
@@ -79,7 +80,11 @@ class BaseResource(Resource):
                     __user_level = config.access_level(__user)
 
                 if __user_level < __access_level:
-                    abort(404, "Insufficient Access Level")
+                    return {
+                        "Worked": False,
+                        "Message": "Insufficient Access Level"
+                    }
+        return None
 
     @staticmethod
     def handle_error(code, **kwargs):
@@ -92,7 +97,9 @@ class ServiceList(BaseResource):
 
     # Returns the list of elements
     def get(self, **kwargs):
-        self.check_access_level()
+        message = self.check_access_level()
+        if message:
+            return message, 403
 
         _limit = self.limit
         _start = 0
@@ -150,7 +157,7 @@ class ServiceList(BaseResource):
             _next = "{0}{1}?start={2}&limit={3}".format(
                 config.export_url,
                 self.url,
-                _start+_limit,
+                _start + _limit,
                 _limit
             )
 
@@ -165,7 +172,9 @@ class ServiceList(BaseResource):
 
     # Creates a new element in the database
     def post(self):
-        self.check_access_level()
+        message = self.check_access_level()
+        if message:
+            return message, 403
 
         # Check for the element data
         if not request.json:
@@ -182,7 +191,7 @@ class ServiceList(BaseResource):
 
             item = self._resource(**request.json)
             item.save(
-                force_insert =True
+                force_insert=True
             )
 
         except Exception as e:
@@ -195,7 +204,7 @@ class ServiceList(BaseResource):
         # Return the newly created element
         return self.make_response({
             "created": True,
-            "item":self.make_result(model_to_dict(item))
+            "item": self.make_result(model_to_dict(item))
         }, 201)
 
 
@@ -204,7 +213,9 @@ class Service(BaseResource):
         super(Service, self).__init__()
 
     def get(self, **kwargs):
-        self.check_access_level()
+        message = self.check_access_level()
+        if message:
+            return message, 403
 
         # Create the query
         query = self._resource.select()
@@ -225,7 +236,9 @@ class Service(BaseResource):
         return self.make_response({"item": self.make_result(item)})
 
     def put(self, **kwargs):
-        self.check_access_level()
+        message = self.check_access_level()
+        if message:
+            return message, 403
 
         # Check for the element data
         if not request.json:
@@ -291,7 +304,9 @@ class Service(BaseResource):
         }, 200)
 
     def delete(self, **kwargs):
-        self.check_access_level()
+        message = self.check_access_level()
+        if message:
+            return message, 403
 
         # Create a query and get the element to delete
         select_query = self._resource.select()
