@@ -25,7 +25,7 @@ def download(filename):
 
     logging.debug("File-Download with id: {0}".format(filename))
 
-    if 'access_level' in config:
+    if hasattr(config.file_server, "access_level"):
         __access_level = config.file_server.access_level["GET"]
 
         if hasattr(config, "access_level"):
@@ -33,7 +33,10 @@ def download(filename):
             __user_level = config.access_level(user)
 
             if __user_level < __access_level:
-                abort(404, "Insufficient Access Level")
+                return jsonify({
+                    "Worked": False,
+                    "Message": "Insufficient Access Level"
+                }), 403
 
     folder_path = config.file_server.path
 
@@ -56,15 +59,18 @@ def download(filename):
 )
 def upload():
 
-    if 'access_level' in config:
-        __access_level = config.file_server.access_level["GET"]
+    if hasattr(config.file_server, "access_level"):
+        __access_level = config.file_server.access_level["POST"]
 
         if hasattr(config, "access_level"):
             user = g.user
             __user_level = config.access_level(user)
 
             if __user_level < __access_level:
-                abort(404, "Insufficient Access Level")
+                return jsonify({
+                    "Worked": False,
+                    "Message": "Insufficient Access Level"
+                }), 403
 
     file = request.files['file']
     if file and _allowed_file(file.filename):
