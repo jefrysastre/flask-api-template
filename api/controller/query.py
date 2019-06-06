@@ -18,7 +18,10 @@ class QueryBuilder:
                 __user_level = config.access_level(user)
 
                 if __user_level < access_level:
-                    abort(404, "Insufficient Access Level")
+                    return jsonify({
+                        "Worked": False,
+                        "Message": "Insufficient Access Level"
+                    }), 403
 
             query = fun(**kwargs)
 
