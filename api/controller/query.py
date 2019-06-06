@@ -5,22 +5,20 @@ import logging
 from api.IOC import IOC
 config = IOC.get("config")
 
+
 class QueryBuilder:
 
     @staticmethod
-    def build(fun):
+    def build(fun, access_level):
         @wraps(fun)
         def result(**kwargs):
 
-            if 'access_level' in kwargs:
-                __access_level = kwargs["access_level"]
+            if hasattr(config, "access_level"):
+                user = g.user
+                __user_level = config.access_level(user)
 
-                if hasattr(config, "access_level"):
-                    user = g.user
-                    __user_level = config.access_level(user)
-
-                    if __user_level < __access_level:
-                        abort(404, "Insufficient Access Level")
+                if __user_level < access_level:
+                    abort(404, "Insufficient Access Level")
 
             query = fun(**kwargs)
 
@@ -28,7 +26,6 @@ class QueryBuilder:
                 query = query.limit(int(request.args['limit']))
 
             query = query.dicts()
-
 
             return jsonify({
                 'rows': [item for item in query]
@@ -48,4 +45,3 @@ class QueryBuilder:
                 # return _return_exception(e)
 
         return result
-

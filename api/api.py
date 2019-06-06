@@ -272,11 +272,11 @@ class API(object):
 
         self.postman_collection.add_item(item=_folder)
 
-    def add_query(self, query, url, method, auth=None, desc=""):
+    def add_query(self, query, url, method, auth=None, desc="", access_level=0):
         from .controller.query import QueryBuilder
 
         # Encapsulate the query into a method
-        _func = QueryBuilder.build(query)
+        _func = QueryBuilder.build(query, access_level)
 
         # Set the auth decorator
         if auth is not None:
