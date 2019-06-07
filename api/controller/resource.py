@@ -99,6 +99,7 @@ class BaseResource(Resource):
 
             if hasattr(item, self.updated_at_field):
                 _item_timestamp = getattr(item, self.updated_at_field)
+                _item_timestamp = _item_timestamp.strftime(config.app.date_time_format)
 
                 if 'updated_at' in request.json:
                     _request_timestamp = request.json['updated_at']
