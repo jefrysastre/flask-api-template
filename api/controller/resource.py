@@ -21,7 +21,7 @@ class ServiceBuilder:
             "decorators": [],
         }
 
-        _filter_fields = []
+        _filter_fields = ["created_at"]
         if 'updated_at_field' in kwargs:
             _filter_fields.append(kwargs['updated_at_field'])
         if 'created_at_field' in kwargs:
