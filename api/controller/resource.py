@@ -21,6 +21,13 @@ class ServiceBuilder:
             "decorators": [],
         }
 
+        _filter_fields = []
+        if 'updated_at_field' in kwargs:
+            _filter_fields.append(kwargs['updated_at_field'])
+        if 'created_at_field' in kwargs:
+            _filter_fields.append(kwargs['created_at_field'])
+        _fields_service["filter_fields"] = _filter_fields
+
         if "url" in kwargs:
             url_partial = kwargs["url"]
         else:
@@ -84,6 +91,36 @@ class BaseResource(Resource):
                         "Worked": False,
                         "Message": "Insufficient Access Level"
                     }
+        return None
+
+    def check_timestamp(self, select_query):
+        if 'updated_at_field' in self:
+            item = select_query.get()
+
+            if self.updated_at_field in item:
+                _item_timestamp = getattr(item, self.timestamp_field)
+
+                if 'updated_at' in request.json:
+                    _request_timestamp = request.json['updated_at']
+
+                    if _item_timestamp != _request_timestamp:
+                        return {
+                            "Worked": False,
+                            "Message": "Timestamps did not match"
+                        }
+                else:
+                    return {
+                        "Worked": False,
+                        "Message": "Missing timestamp"
+                    }
+            else:
+                return {
+                    "Worked": False,
+                    "Message": "{0} does not have a {1} field".format(
+                        self._resource._meta.name,
+                        self.timestamp_field
+                    )
+                }
         return None
 
     @staticmethod
@@ -183,13 +220,15 @@ class ServiceList(BaseResource):
             })
 
         try:
+            # filter timestamp data
+            params = {}
+            for key, value in request.json.items():
+                if key not in self.filter_fields:
+                    params[key] = value
+            update_query = self._resource.update(**params)
+
             # Creates the element in the database
-
-            # item, _created = self._resource.get_or_create(**request.json)
-            # if _created:
-            #     item.save()
-
-            item = self._resource(**request.json)
+            item = self._resource(**params)
             item.save(
                 force_insert=True
             )
@@ -248,7 +287,12 @@ class Service(BaseResource):
 
         # Create a the update query.
         try:
-            update_query = self._resource.update(**request.json)
+            # filter timestamp data
+            params = {}
+            for key, value in request.json.items():
+                if key not in self.filter_fields:
+                    params[key] = value
+            update_query = self._resource.update(**params)
         except AttributeError as ae:
             # Return the exception message
             return self.handle_error(code=400, **{
@@ -278,6 +322,11 @@ class Service(BaseResource):
         # Update the selected item
         elif _affected_rows == 1:
             try:
+                # Check if timestamps match
+                message = self.check_timestamp(select_query)
+                if message:
+                    return message, 400
+
                 update_query.execute()
                 item = select_query.get()
 
