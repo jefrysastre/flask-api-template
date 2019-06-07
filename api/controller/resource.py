@@ -94,11 +94,11 @@ class BaseResource(Resource):
         return None
 
     def check_timestamp(self, select_query):
-        if 'updated_at_field' in self:
+        if hasattr(self, "updated_at_field"):
             item = select_query.get()
 
-            if self.updated_at_field in item:
-                _item_timestamp = getattr(item, self.timestamp_field)
+            if hasattr(item, self.updated_at_field):
+                _item_timestamp = getattr(item, self.updated_at_field)
 
                 if 'updated_at' in request.json:
                     _request_timestamp = request.json['updated_at']
