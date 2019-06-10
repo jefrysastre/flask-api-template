@@ -46,16 +46,27 @@ class API(object):
             from flask.logging import default_handler
             from flask import request
 
+            from .controller.log_db import LogDBHandler
+
             file_handler = logging.handlers.TimedRotatingFileHandler(
                 filename=config.logger.filename,
                 when=config.logger.when,
                 backupCount=config.logger.backupCount
             )
-
             file_handler.suffix = "%Y.%m.%d.%H.%M.%S.log"
             file_handler.setLevel(config.logger.level)
 
-            logging.basicConfig(level=logging.DEBUG, handlers=[default_handler, file_handler])
+            _handlers = [default_handler, file_handler]
+
+            if hasattr(config.logger, 'db'):
+                db_handler = LogDBHandler(
+                    resource= config.logger.db['model'],
+                    params=config.logger.db['params']
+                )
+                db_handler.setLevel(config.logger.level)
+                _handlers.append(db_handler)
+
+            logging.basicConfig(level=logging.DEBUG, handlers=_handlers)
 
             @self.app.after_request
             def after(response):
