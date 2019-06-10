@@ -89,13 +89,30 @@ def upload():
 
         file.save(file_path)
 
-        return jsonify({
-            "message": "Image saved",
-            "url": "{0}download/{1}.{2}".format(
+        _url = "{0}download/{1}.{2}".format(
                 config.export_url,
                 hash,
                 file_extension
             )
+
+        if hasattr(config.file_server, 'db'):
+            params = {
+                # 'user_id': user.id,
+                # 'entry': record
+            }
+
+            for _key, _field in config.file_server.db['params']:
+                params[_key]: _field(user, filename, file_path, _url)
+
+            # Creates the element in the database
+            item = config.file_server.db['model'](**params)
+            item.save(
+                force_insert=True
+            )
+
+        return jsonify({
+            "message": "Image saved",
+            "url": _url
         }), 200
     else:
         abort(400)
