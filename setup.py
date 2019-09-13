@@ -30,5 +30,9 @@ setup(name='FlaskAPI',
         'PyMySQL==0.9.3',
         'pytz==2019.1',
         'six==1.12.0',
+        'requests==2.21.0',
+        'stomp.py==4.1.22',
+        'python-telegram-bot==12.0.0b1'
+        'ariadne==0.6.0',
         'Werkzeug==0.14.1'],
       zip_safe=False)

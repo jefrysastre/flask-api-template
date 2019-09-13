@@ -39,6 +39,17 @@ class API(object):
         if hasattr(config, "file_server"):
             self.enable_file_server()
 
+        # Create graphql server endpoints
+        if hasattr(config, "graphql"):
+            self._graphql_types = {
+                'AUTO': 'Int!',
+                'VARCHAR': 'String',
+                'DATETIME': 'String',
+                'INT': 'Int'
+            }
+            self.graphql_config = config.graphql
+            self.enable_graphql_server()
+
         # Create loggin configuration
         if hasattr(config, "logger"):
             import logging
@@ -121,10 +132,13 @@ class API(object):
             self.app.debug = False
 
     def enable_login(self):
-        from .controller.login import login, logout
+        from .controller.login import login, logout, recovery, validate_code, reset
 
         self.app.route(self.base_url + 'login', methods=["GET"])(login)
         self.app.route(self.base_url + 'logout', methods=["GET"])(logout)
+        self.app.route(self.base_url + 'recovery', methods=["POST"])(recovery)
+        self.app.route(self.base_url + 'validate', methods=["POST"])(validate_code)
+        self.app.route(self.base_url + 'reset', methods=["POST"])(reset)
 
         self.postman_collection.add_item(
             item=postman.Request(
@@ -143,6 +157,70 @@ class API(object):
                 method="GET",
                 auth="token",
                 description='Endpoint to logout'
+            )
+        )
+
+        self.postman_collection.add_item(
+            item=postman.Request(
+                name="Recover Password",
+                url="{0}recovery".format(self.postman_config.base_url),
+                method="POST",
+                description='Endpoint receive a password recovery email',
+                headers=[{
+                    "key": "Content-Type",
+                    "name": "Content-Type",
+                    "type": "text",
+                    "value": "application/json"
+                }],
+                body={
+                    "mode": "raw",
+                    "raw": json.dumps({
+                        'email': 'user@example.com.br'
+                    }, indent=4)
+                }
+            )
+        )
+
+        self.postman_collection.add_item(
+            item=postman.Request(
+                name="Validate Code",
+                url="{0}validate".format(self.postman_config.base_url),
+                method="POST",
+                description='Endpoint to validate password recovery tokens',
+                headers=[{
+                    "key": "Content-Type",
+                    "name": "Content-Type",
+                    "type": "text",
+                    "value": "application/json"
+                }],
+                body={
+                    "mode": "raw",
+                    "raw": json.dumps({
+                        'code': '1234567812345678'
+                    }, indent=4)
+                }
+            )
+        )
+
+        self.postman_collection.add_item(
+            item=postman.Request(
+                name="Reset Password",
+                url="{0}reset".format(self.postman_config.base_url),
+                method="POST",
+                auth="token",
+                description='Endpoint to reset user password',
+                headers=[{
+                    "key": "Content-Type",
+                    "name": "Content-Type",
+                    "type": "text",
+                    "value": "application/json"
+                }],
+                body={
+                    "mode": "raw",
+                    "raw": json.dumps({
+                        'password': '12345678'
+                    }, indent=4)
+                }
             )
         )
 
@@ -178,6 +256,66 @@ class API(object):
                             "type": "file"
                         }
                     ]
+                }
+            )
+        )
+
+    def enable_graphql_server(self):
+        from ariadne import QueryType, make_executable_schema, load_schema_from_path
+
+        if self.graphql_config.autogenerate_types:
+            self.generate_graphql_types()
+
+        def build_lambda_get_all(model):
+            return lambda _, info: model.select().dicts().execute()
+
+        def build_lambda_get_by_id(model):
+            return lambda *_, id: model.select().where(model.id == id).dicts().get()
+
+        query = QueryType()
+        _resolvers = {}
+        for _model in self.graphql_config.models:
+            # create resolvers for the model
+            _resolvers["{0}s".format(_model._meta.name)] = build_lambda_get_all(model=_model)
+            _resolvers[_model._meta.name] = build_lambda_get_by_id(model=_model)
+            # add resolvers to the query object
+            query.field("{0}s".format(_model._meta.name))(_resolvers["{0}s".format(_model._meta.name)])
+            query.field(_model._meta.name)(_resolvers[_model._meta.name])
+
+        # save graphql schema for later.
+        type_defs = load_schema_from_path(self.graphql_config.path)
+
+        try:
+            schema = make_executable_schema(type_defs, query)
+            IOC.set("schema", schema)
+        except Exception as e:
+            print(e)
+
+        from .controller.graphql import playgroud, post_query
+
+        self.app.route(self.base_url + 'graphql', methods=["GET"])(playgroud)
+        self.app.route(self.base_url + 'graphql', methods=["POST"])(post_query)
+
+        self.postman_collection.add_item(
+            item=postman.Request(
+                name="GraphQL",
+                url="{0}graphql/".format(self.postman_config.base_url),
+                method="GET",
+                auth="token",
+                description='GraphQL PlayGround'
+            )
+        )
+
+        self.postman_collection.add_item(
+            item=postman.Request(
+                name="GraphQL Query",
+                url="{0}graphql".format(self.postman_config.base_url),
+                method="POST",
+                auth="token",
+                description='GraphQL Post Query Endpoint',
+                body={
+                    "mode": "graphql",
+                    "graphql": ""
                 }
             )
         )
@@ -350,3 +488,25 @@ class API(object):
                 indent=4,
                 sort_keys=True
             )
+
+    def generate_graphql_types(self):
+        output_type_defs = ""
+        output_query_defs = "\ntype Query {"
+        for model in self.graphql_config.models:
+            # create gql type def string
+            output_type_defs = output_type_defs + "\ntype {0} {{".format(model._meta.name)
+            for _column_name in model._meta.columns:
+                output_type_defs = output_type_defs + "\n {0}: {1}".format(_column_name, self._graphql_types[
+                    model._meta.columns[_column_name].field_type])
+            output_type_defs = output_type_defs + "\n}\n"
+
+            # create gql query strings
+            output_query_defs = output_query_defs + "\n {0} \n {1}".format(
+                "{0}s : [{1}]".format(model._meta.name, model._meta.name),
+                "{0}(id: Int!) : {1}".format(model._meta.name, model._meta.name),
+            )
+        output_query_defs = output_query_defs + "\n}"
+        output_type_defs = output_type_defs + output_query_defs
+
+        with open(self.graphql_config.outputpath, 'w') as outfile:
+            outfile.writelines(output_type_defs)

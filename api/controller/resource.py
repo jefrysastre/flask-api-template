@@ -362,7 +362,6 @@ class Service(BaseResource):
         select_query = self._resource.select()
         delete_query = self._resource.delete()
 
-        select_query = self._resource.select()
         for key, value in kwargs.items():
             _field = getattr(self._resource, key)
             select_query = select_query.where(_field == value)
@@ -385,9 +384,14 @@ class Service(BaseResource):
                     value)
             })
 
-        item = select_query.get()
-
         try:
+            # Check if timestamps match
+            message = self.check_timestamp(select_query)
+            if message:
+                return message, 400
+
+            item = select_query.get()
+
             # delete the item in the database
             # item.delete_instance()
             delete_query.execute()
