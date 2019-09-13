@@ -1,5 +1,6 @@
 from flask import jsonify, request, g, abort
 from functools import wraps
+import traceback
 import logging
 
 from api.IOC import IOC
@@ -44,6 +45,12 @@ class QueryBuilder:
                 logging.debug("Executing method: {0}".format(fun))
                 return fun(*args, **kwargs)
             except Exception as e:
+                if hasattr(config, "telegram"):
+                    # config.telegram.send(traceback.format_exc())
+                    config.telegram.send_as_document(
+                        message = traceback.format_exc(),
+                        filename="exeption.gestao.leitos.txt"
+                    )
                 raise
                 # return _return_exception(e)
 

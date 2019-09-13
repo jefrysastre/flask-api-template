@@ -1,6 +1,6 @@
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 import os.path
-
+from io import BytesIO
 
 class TelegramBotNotification:
     def __init__(self, bot_token, chats, log_file='logs/app'):
@@ -11,7 +11,8 @@ class TelegramBotNotification:
         # Create the Updater and pass it your bot's token.
         # Make sure to set use_context=True to use the new context based callbacks
         # Post version 12 this will no longer be necessary
-        self.updater = Updater(self.bot_token)
+        self.updater = Updater(self.bot_token, use_context=True)
+
 
         # Get the dispatcher to register handlers
         self.dispatcher = self.updater.dispatcher
@@ -20,8 +21,15 @@ class TelegramBotNotification:
         self.dispatcher.add_handler(CommandHandler("log", self.generate_log_method()))
         self.dispatcher.add_handler(CommandHandler("get_id", self.generate_get_id_method()))
 
+        self.dispatcher.error_handlers.append(TelegramBotNotification.handle_error)
+
         # Start the Bot
-        self.updater.start_polling()
+        # self.updater.start_polling(
+        #     poll_interval=5.0,
+        #     clean=True
+        # )
+        #
+        # self.updater.stop()
 
     def send(self, message, chat_name="default"):
         _chat_id = self.chats[chat_name]
@@ -30,10 +38,18 @@ class TelegramBotNotification:
             text=message
         )
 
+    def send_as_document(self, message, chat_name="default", filename='file'):
+        _bytes= bytes(message , 'utf-8')
+        _chat_id = self.chats[chat_name]
+        self.updater.bot.send_document(
+            chat_id=_chat_id,
+            filename=filename,
+            document=BytesIO(_bytes)
+        )
+
     # Define a few command handlers. These usually take the two arguments bot and
     # update. Error handlers also receive the raised TelegramError object in error.
     def generate_log_method(self):
-
         def log_handler(update, context):
             """Send a message when the command /status is issued."""
             # update.message.reply_text('Service is up and running')
@@ -69,12 +85,6 @@ class TelegramBotNotification:
         return get_id_handler
 
     @staticmethod
-    def echo(update, context):
-        """Echo the user message."""
-        context.message.reply_text("Recebido: " + context.message.text)
-
-    def error(update, context):
-        """Log Errors caused by Updates."""
-        # logger.warning('Update "%s" caused error "%s"', update, context.error)
-        print('Update "%s" caused error "%s"', update, context.error)
+    def handle_error(update, context):
+        pass
 
