@@ -56,29 +56,29 @@ class TelegramBotNotification:
             _log_file = self.log_file
 
             if os.path.isfile(_log_file):
-                update.send_message(
-                    chat_id=context.message.chat_id,
+                self.updater.bot.send_message(
+                    chat_id=update.message.chat_id,
                     text='Sending log file ...'
                 )
-                update.send_document(
-                    chat_id=context.message.chat_id,
+                self.updater.bot.send_document(
+                    chat_id=update.message.chat_id,
                     document=open(_log_file, 'rb')
                 )
             else:
-                update.send_message(
-                    chat_id=context.message.chat_id,
+                self.updater.bot.send_message(
+                    chat_id=update.message.chat_id,
                     text='Log not found at {0}'.format(_log_file)
                 )
         return log_handler
 
     def generate_get_id_method(self):
         def get_id_handler(update, context):
-            update.send_message(
-                chat_id=context.message.chat_id,
+            self.updater.bot.send_message(
+                chat_id=update.message.chat_id,
                 text='{0}: Type: {1} Id: {2}'.format(
-                    context.message.chat.first_name,
-                    context.message.chat.type,
-                    context.message.chat_id
+                    update.message.chat.first_name,
+                    update.message.chat.type,
+                    update.message.chat_id
                 )
             )
         return get_id_handler
