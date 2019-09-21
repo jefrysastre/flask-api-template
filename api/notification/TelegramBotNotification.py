@@ -2,9 +2,11 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 import os.path
 from io import BytesIO
 
+
 class TelegramBotNotification:
-    def __init__(self, bot_token, chats, log_file='logs/app'):
+    def __init__(self, bot_token, update, chats, log_file='logs/app'):
         self.bot_token = bot_token
+        self.update = update
         self.chats = chats
         self.log_file = log_file
 
@@ -25,10 +27,11 @@ class TelegramBotNotification:
 
         # Start the Bot
         # This will raise an exception if there is another bot instance running.
-        self.updater.start_polling(
-            poll_interval=5.0,
-            clean=True
-        )
+        if self.update:
+            self.updater.start_polling(
+                poll_interval=5.0,
+                clean=True
+            )
 
     def send(self, message, chat_name="default"):
         _chat_id = self.chats[chat_name]
