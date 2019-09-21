@@ -24,12 +24,11 @@ class TelegramBotNotification:
         self.dispatcher.error_handlers.append(TelegramBotNotification.handle_error)
 
         # Start the Bot
-        # self.updater.start_polling(
-        #     poll_interval=5.0,
-        #     clean=True
-        # )
-        #
-        # self.updater.stop()
+        # This will raise an exception if there is another bot instance running.
+        self.updater.start_polling(
+            poll_interval=5.0,
+            clean=True
+        )
 
     def send(self, message, chat_name="default"):
         _chat_id = self.chats[chat_name]
@@ -86,5 +85,5 @@ class TelegramBotNotification:
 
     @staticmethod
     def handle_error(update, context):
-        pass
+        raise
 
