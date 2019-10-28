@@ -135,7 +135,7 @@ def recovery():
 
         # send the email with the link
         result = config.email.send(
-            email_to="jefry.sastre@gmail.com",
+            email_to=user.email,
             subject="Password recovery email",
             message=_message
         )
